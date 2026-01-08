@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Inversiones - Dividendos + Crecimiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+        }
+        .opportunity-alert {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
+    <div id="app" class="p-6 max-w-7xl mx-auto">
+        <!-- El contenido se cargará aquí -->
+    </div>
+
+    <script>
+        // Configuración y datos
+        const config = {
+            exchangeRate: 20.30,
+            lastUpdate: '07 Ene 2026, 2:45 PM'
+        };
+
+        const currentPrices = {
+            mexican: {
+                AMX: 18.60,
+                BBAJIO: 46.02,
+                GFNORTE: 179.26
+            },
+            us: {
+                COIN: 245.00,
+                LCID: 11.14,
+                MSFT: 483.50,
+                SCHD: 28.11
+            }
+        };
+
+        const portfolio = {
+            mexican: [
+                { 
+                    ticker: 'AMX', 
+                    shares: 54, 
+                    costBasis: 19.05,
+                    dividend: 0.70,
+                    frequency: 'Trimestral',
+                    sector: 'Telecomunicaciones'
+                },
+                { 
+                    ticker: 'BBAJIO', 
+                    shares: 10, 
+                    costBasis: 45.51,
+                    dividend: 2.80,
+                    frequency: 'Trimestral',
+                    sector: 'Financiero'
+                },
+                { 
+                    ticker: 'GFNORTE', 
+                    shares: 17, 
+                    costBasis: 174.32,
+                    dividend: 11.50,
+                    frequency: 'Trimestral',
+                    sector: 'Financiero'
+                }
+            ],
+            us: [
+                { 
+                    ticker: 'COIN', 
+                    shares: 0.03481, 
+                    costBasis: 233.50,
+                    dividend: 0,
+                    frequency: 'N/A',
+                    sector: 'Crypto/Tech',
+                    volatility: 'Muy Alta'
+                },
+                { 
+                    ticker: 'LCID', 
+                    shares: 5.59, 
+                    costBasis: 11.39,
+                    dividend: 0,
+                    frequency: 'N/A',
+                    sector: 'Autos/EV',
+                    volatility: 'Muy Alta'
+                },
+                { 
+                    ticker: 'MSFT', 
+                    shares: 0.0292, 
+                    costBasis: 474.20,
+                    dividend: 3.00,
+                    frequency: 'Trimestral',
+                    sector: 'Tech/IA',
+                    volatility: 'Media'
+                },
+                { 
+                    ticker: 'SCHD', 
+                    shares: 3.04741, 
+                    costBasis: 27.26,
+                    dividend: 2.40,
+                    frequency: 'Trimestral',
+                    sector: 'ETF Dividendos',
+                    volatility: 'Baja'
+                }
+            ]
+        };
+
+        // Funciones de cálculo
+        function calculateMetrics(stock, isMexican = true) {
+            const currentPrice = isMexican ? currentPrices.mexican[stock.ticker] : currentPrices.us[stock.ticker];
+            const invested = stock.shares * stock.costBasis;
+            const currentValue = stock.shares * currentPrice;
+            const gain = currentValue - invested;
+            const gainPercent = ((gain / invested) * 100).toFixed(2);
+            
+            const priceChange = currentPrice - stock.costBasis;
+            const priceChangePercent = ((priceChange / stock.costBasis) * 100).toFixed(2);
+            const isBuyOpportunity = currentPrice < stock.costBasis;
+            
+            const annualDividend = stock.shares * stock.dividend;
+            const dividendYield = stock.dividend > 0 ? ((stock.dividend / stock.costBasis) * 100).toFixed(2) : 0;
+            const quarterlyDividend = annualDividend / 4;
+
+            return {
+                currentPrice,
+                invested: isMexican ? invested : invested * config.exchangeRate,
+                currentValue: isMexican ? currentValue : currentValue * config.exchangeRate,
+                gain: isMexican ? gain : gain * config.exchangeRate,
+                gainPercent,
+                priceChange,
+                priceChangePercent,
+                isBuyOpportunity,
+                annualDividend: isMexican ? annualDividend : annualDividend * config.exchangeRate,
+                quarterlyDividend: isMexican ? quarterlyDividend : quarterlyDividend * config.exchangeRate,
+                dividendYield
+            };
+        }
+
+        function calculateTotalMetrics() {
+            let totalInvested = 0;
+            let totalCurrent = 0;
+            let totalAnnualDividend = 0;
+            let buyOpportunities = 0;
+
+            portfolio.mexican.forEach(stock => {
+                const metrics = calculateMetrics(stock, true);
+                totalInvested += metrics.invested;
+                totalCurrent += metrics.currentValue;
+                totalAnnualDividend += metrics.annualDividend;
+                if (metrics.isBuyOpportunity) buyOpportunities++;
+            });
+
+            portfolio.us.forEach(stock => {
+                const metrics = calculateMetrics(stock, false);
+                totalInvested += metrics.invested;
+                totalCurrent += metrics.currentValue;
+                totalAnnualDividend += metrics.annualDividend;
+                if (metrics.isBuyOpportunity) buyOpportunities++;
+            });
+
+            const totalGain = totalCurrent - totalInvested;
+            const totalGainPercent = ((totalGain / totalInvested) * 100).toFixed(2);
+            const portfolioYield = ((totalAnnualDividend / totalInvested) * 100).toFixed(2);
+
+            return {
+                totalInvested,
+                totalCurrent,
+                totalGain,
+                totalGainPercent,
+                totalAnnualDividend,
+                totalQuarterlyDividend: totalAnnualDividend / 4,
+                portfolioYield,
+                buyOpportunities
+            };
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 }).format(value);
+        }
+
+        function updateTime() {
+            config.lastUpdate = new Date().toLocaleString('es-MX', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            renderDashboard();
+        }
+
+        // Renderizado
+        function renderDashboard() {
+            const metrics = calculateTotalMetrics();
+            const app = document.getElementById('app');
+
+            app.innerHTML = `
+                <!-- Header -->
+                <div class="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-4xl font-bold text-white mb-2">Tu Cartera de Inversión</h1>
+                        <p class="text-slate-400">Estrategia: Dividendos Estables + Crecimiento IA/Tech</p>
+                        <p class="text-slate-500 text-sm mt-1">Última actualización: ${config.lastUpdate}</p>
+                    </div>
+                    <button onclick="updateTime()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Actualizar
+                    </button>
+                </div>
+
+                <!-- Alertas -->
+                ${metrics.buyOpportunities > 0 ? `
+                <div class="mb-6 bg-gradient-to-r from-red-900 to-orange-900 border-2 border-red-500 rounded-xl p-6 opportunity-alert">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">🔥 ${metrics.buyOpportunities} OPORTUNIDAD${metrics.buyOpportunities > 1 ? 'ES' : ''} DE COMPRA DETECTADA${metrics.buyOpportunities > 1 ? 'S' : ''}</h2>
+                            <p class="text-orange-200 mt-1">Acciones cotizando DEBAJO de tu costo promedio. ¡Momento ideal para mejorar tu precio!</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Resumen -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-slate-400 text-sm">Inversión Total</span>
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white">$${formatCurrency(metrics.totalInvested)}</p>
+                        <p class="text-xs text-slate-500 mt-1">MXN</p>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-slate-400 text-sm">Valor Actual</span>
+                            <svg class="w-5 h-5 ${metrics.totalGain >= 0 ? 'text-green-400' : 'text-red-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white">$${formatCurrency(metrics.totalCurrent)}</p>
+                        <p class="text-sm mt-1 ${metrics.totalGain >= 0 ? 'text-green-400' : 'text-red-400'}">
+                            ${metrics.totalGain >= 0 ? '+' : ''}${metrics.totalGainPercent}%
+                        </p>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl p-6 border border-emerald-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-emerald-100 text-sm">Dividendos Anuales</span>
+                            <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white">$${formatCurrency(metrics.totalAnnualDividend)}</p>
+                        <p class="text-sm text-emerald-100 mt-1">~$${formatCurrency(metrics.totalQuarterlyDividend)} trimestral</p>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-slate-400 text-sm">Yield Portafolio</span>
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            </svg>
+                        </div>
+                        <p class="text-3xl font-bold text-white">${metrics.portfolioYield}%</p>
+                        <p class="text-xs text-slate-500 mt-1">Rendimiento anual</p>
+                    </div>
+                </div>
+
+                <!-- Acciones Mexicanas -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white mb-4">🇲🇽 Acciones Mexicanas - Dividendos Estables</h2>
+                    <div class="grid gap-4">
+                        ${portfolio.mexican.map(stock => {
+                            const m = calculateMetrics(stock, true);
+                            return `
+                            <div class="${m.isBuyOpportunity ? 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-2 border-red-500 opportunity-alert' : 'bg-slate-800 border border-slate-700'} rounded-xl p-6">
+                                ${m.isBuyOpportunity ? `
+                                <div class="mb-4 flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg font-bold">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    ⚠️ OPORTUNIDAD DE COMPRA - Precio ${m.priceChangePercent}% bajo tu promedio
+                                </div>
+                                ` : ''}
+                                
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-white">${stock.ticker}</h3>
+                                        <p class="text-sm text-slate-400">${stock.sector}</p>
+                                    </div>
+                                    <div class="px-3 py-1 rounded-full text-xs font-semibold ${m.gain >= 0 ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
+                                        ${m.gain >= 0 ? '+' : ''}${m.gainPercent}%
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Acciones</p>
+                                        <p class="text-white font-semibold">${stock.shares}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Tu Costo</p>
+                                        <p class="text-white font-semibold">$${stock.costBasis.toFixed(2)}</p>
+                                    </div>
+                                    <div class="${m.isBuyOpportunity ? 'bg-red-700/30 rounded p-2 -m-2' : ''}">
+                                        <p class="text-xs text-slate-500 mb-1">Precio HOY</p>
+                                        <p class="font-bold text-lg ${m.isBuyOpportunity ? 'text-red-400' : 'text-emerald-400'}">
+                                            $${m.currentPrice.toFixed(2)}
+                                        </p>
+                                        <p class="text-xs ${m.priceChangePercent >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                            ${m.priceChangePercent >= 0 ? '↑' : '↓'} ${Math.abs(m.priceChangePercent)}%
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Invertido</p>
+                                        <p class="text-white font-semibold">$${formatCurrency(m.invested)}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Valor Actual</p>
+                                        <p class="text-white font-semibold">$${formatCurrency(m.currentValue)}</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-emerald-900/30 rounded-lg p-4 border border-emerald-800/50">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Dividend Yield</p>
+                                            <p class="text-emerald-400 font-bold text-lg">${m.dividendYield}%</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Anual</p>
+                                            <p class="text-emerald-400 font-bold">$${formatCurrency(m.annualDividend)}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Por Trimestre</p>
+                                            <p class="text-emerald-400 font-bold">$${formatCurrency(m.quarterlyDividend)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Acciones USA -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white mb-4">🇺🇸 Acciones USA - Crecimiento IA/Tech</h2>
+                    <div class="grid gap-4">
+                        ${portfolio.us.map(stock => {
+                            const m = calculateMetrics(stock, false);
+                            return `
+                            <div class="${m.isBuyOpportunity ? 'bg-gradient-to-r from-red-900/50 to-orange-900/50 border-2 border-red-500 opportunity-alert' : 'bg-slate-800 border border-slate-700'} rounded-xl p-6">
+                                ${m.isBuyOpportunity ? `
+                                <div class="mb-4 flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg font-bold">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    ⚠️ OPORTUNIDAD DE COMPRA - Precio ${m.priceChangePercent}% bajo tu promedio
+                                </div>
+                                ` : ''}
+                                
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-white">${stock.ticker}</h3>
+                                        <p class="text-sm text-slate-400">${stock.sector}</p>
+                                        ${stock.volatility ? `
+                                        <span class="inline-block mt-1 px-2 py-0.5 bg-orange-900 text-orange-300 text-xs rounded-full">
+                                            Volatilidad: ${stock.volatility}
+                                        </span>
+                                        ` : ''}
+                                    </div>
+                                    <div class="px-3 py-1 rounded-full text-xs font-semibold ${m.gain >= 0 ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
+                                        ${m.gain >= 0 ? '+' : ''}${m.gainPercent}%
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Acciones</p>
+                                        <p class="text-white font-semibold">${stock.shares}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Tu Costo</p>
+                                        <p class="text-white font-semibold">$${stock.costBasis.toFixed(2)} USD</p>
+                                    </div>
+                                    <div class="${m.isBuyOpportunity ? 'bg-red-700/30 rounded p-2 -m-2' : ''}">
+                                        <p class="text-xs text-slate-500 mb-1">Precio HOY</p>
+                                        <p class="font-bold text-lg ${m.isBuyOpportunity ? 'text-red-400' : 'text-emerald-400'}">
+                                            $${m.currentPrice.toFixed(2)} USD
+                                        </p>
+                                        <p class="text-xs ${m.priceChangePercent >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                            ${m.priceChangePercent >= 0 ? '↑' : '↓'} ${Math.abs(m.priceChangePercent)}%
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Invertido</p>
+                                        <p class="text-white font-semibold">$${formatCurrency(m.invested)} MXN</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">Valor Actual</p>
+                                        <p class="text-white font-semibold">$${formatCurrency(m.currentValue)} MXN</p>
+                                    </div>
+                                </div>
+
+                                ${stock.dividend > 0 ? `
+                                <div class="bg-emerald-900/30 rounded-lg p-4 border border-emerald-800/50">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Dividend Yield</p>
+                                            <p class="text-emerald-400 font-bold text-lg">${m.dividendYield}%</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Anual</p>
+                                            <p class="text-emerald-400 font-bold">$${formatCurrency(m.annualDividend)} MXN</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-emerald-300 mb-1">Por Trimestre</p>
+                                            <p class="text-emerald-400 font-bold">$${formatCurrency(m.quarterlyDividend)} MXN</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : `
+                                <div class="bg-blue-900/30 rounded-lg p-4 border border-blue-800/50">
+                                    <p class="text-blue-300 text-sm flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Enfoque en crecimiento de capital - No paga dividendos
+                                    </p>
+                                </div>
+                                `}
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Análisis -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700">
+                    <h2 class="text-xl font-bold text-white mb-4">📊 Análisis HOY</h2>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-emerald-400 mb-3">✅ Posiciones Positivas</h3>
+                            <ul class="space-y-2 text-slate-300 text-sm">
+                                <li>• <strong>COIN:</strong> +4.9% - Coinbase con nueva estrategia 2026</li>
+                                <li>• <strong>GFNORTE:</strong> +2.8% - Sector financiero sólido</li>
+                                <li>• <strong>SCHD:</strong> +3.1% - ETF estable con yield 3.96%</li>
+                                <li>• <strong>MSFT:</strong> +2.0% - Tech líder en IA generativa</li>
+                                <li>• <strong>BBAJIO:</strong> +1.1% - Banco regional estable</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-red-400 mb-3">🔴 Oportunidades de Compra</h3>
+                            <ul class="space-y-2 text-slate-300 text-sm">
+                                <li>• <strong class="text-red-400">AMX:</strong> -2.4% bajo tu costo - Telecomunicaciones en descuento</li>
+                                <li>• <strong class="text-red-400">LCID:</strong> -2.2% bajo tu costo - EV con alta volatilidad</li>
+                                <li class="text-orange-300 mt-3">💡 <strong>Recomendación:</strong> AMX es buena empresa con dividendos sólidos. Si crees en el largo plazo, este es un momento para promediar hacia abajo y aumentar tu ingreso pasivo.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <h3 class="text-white font-semibold mb-2">💰 Estrategia Sugerida HOY:</h3>
+                        <p class="text-slate-300 text-sm mb-3">
+                            Con AMX en caída, podrías comprar más acciones para <strong class="text-emerald-400">mejorar tu precio promedio</strong>. 
+                        </p>
+                        <div class="bg-slate-800 rounded p-3 space-y-1 text-sm">
+                            <p class="text-slate-300">📊 Si compras <strong class="text-white">50 acciones</strong> más a $18.60:</p>
+                            <p class="text-emerald-400">• Nuevo promedio: <strong>$18.81</strong> (vs $19.05 actual = -1.3% mejora)</p>
+                            <p class="text-emerald-400">• Total acciones: <strong>104</strong></p>
+                            <p class="text-emerald-400">• Dividendos extra: <strong>~$35 MXN/año</strong></p>
+                            <p class="text-slate-400 mt-2 text-xs">Inversión requerida: $930 MXN</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="mt-6 text-center text-slate-500 text-sm">
+                    <p>💡 Dashboard descargable - Funciona sin conexión a internet</p>
+                    <p class="mt-1">Tipo de cambio: ${config.exchangeRate} MXN/USD | Última actualización: ${config.lastUpdate}</p>
+                </div>
+            `;
+        }
+
+        // Inicializar
+        renderDashboard();
+    </script>
+</body>
+</html>
