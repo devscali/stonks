@@ -200,10 +200,13 @@
             app.innerHTML = `
                 <!-- Header -->
                 <div class="mb-8 flex justify-between items-center">
-                    <div>
-                        <h1 class="text-4xl font-bold text-white mb-2">Tu Cartera de Inversión</h1>
-                        <p class="text-slate-400">Estrategia: Dividendos Estables + Crecimiento IA/Tech</p>
-                        <p class="text-slate-500 text-sm mt-1">Última actualización: ${config.lastUpdate}</p>
+                    <div class="flex items-center gap-4">
+                        <img src="https://i.imgflip.com/2xscjb.png" alt="Stonks" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow-lg shadow-emerald-500/30">
+                        <div>
+                            <h1 class="text-4xl font-bold text-white mb-2">Tu Cartera de Inversión</h1>
+                            <p class="text-slate-400">Estrategia: Dividendos Estables + Crecimiento IA/Tech</p>
+                            <p class="text-slate-500 text-sm mt-1">Última actualización: ${config.lastUpdate}</p>
+                        </div>
                     </div>
                     <button onclick="updateTime()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
